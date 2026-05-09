@@ -3,6 +3,8 @@
 
 #include "driver/gpio.h"
 
+#include "wind_driver.ino"
+
 #define HUMIDITY_PIN    GPIO_NUM_16
 #define LIGHT_PIN       GPIO_NUM_34
 #define RAIN_PIN        GPIO_NUM_23
@@ -159,6 +161,11 @@ void loop() {
     lastPrint = millis();
     print_info(temperature, pressure, humidity, rain, light);
   }
+
+  float wind_dir_deg = get_wind_direction();
+  Serial.print("Wind Direction: ");
+  Serial.print(wind_dir_deg);
+  Serial.println(" deg");
 
   delay(50);
 }
