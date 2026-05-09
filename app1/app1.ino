@@ -3,12 +3,45 @@
 
 #include "driver/gpio.h"
 
-#define LIGHT_PIN       GPIO_NUM_34
 #define HUMIDITY_PIN    GPIO_NUM_16
+#define LIGHT_PIN       GPIO_NUM_34
+#define RAIN_PIN        GPIO_NUM_23
 
+uint32_t rainTips = 0;
+uint32_t loops = 0;
+bool lastState = HIGH;
+uint32_t lastTipTime = 0;
+uint32_t lastPrint = 0;
+
+const uint32_t PrintMs = 5000;
+const uint32_t debounceMs = 5;
 Adafruit_DPS310 dps;
 
-float get_humidity() {
+void init_rain() {
+  pinMode(RAIN_PIN, INPUT_PULLUP);
+}
+
+void get_rain(float& rain){
+  bool currentState = digitalRead(RAIN_PIN);
+  loops++;
+
+  if (lastState == HIGH && currentState == LOW) {
+    if (millis() - lastTipTime > debounceMs) {
+      rainTips++;
+      lastTipTime = millis();
+    }
+  }
+
+  if(loops == 100){
+    loops     = 0;
+    rainTips  = 0;
+  }
+
+  rain = (rainTips)*0.3;
+  lastState = currentState;
+}
+
+void get_humidity(float& humidity) {
   int i, j;
   int duree[42];
   unsigned long pulse;
@@ -53,8 +86,7 @@ float get_humidity() {
   if ( (data[0] + data[1] + data[2] + data[3]) != data[4] ) 
     Serial.println(" Erreur checksum");
 
-  return data[0] + (data[1] / 256.0);
-  Serial.printf(" Humidite = %4.0f \%%  Temperature = %4.2f degreC \n", humidite, temperature);
+  humidity = data[0] + (data[1] / 256.0);
 }
 
 void init_light() {
@@ -68,8 +100,8 @@ void init_light() {
 }
 
 // Returns 1 if light detected, else 0.
-int get_light_bool() {
-  return gpio_get_level(LIGHT_PIN);
+void get_light_bool(int& light) {
+  light = gpio_get_level(LIGHT_PIN);
 }
 
 void init_barometer() {
@@ -89,21 +121,10 @@ void get_pressure_and_temp(float& temperature, float& pressure) {
   pressure = pressure_event.pressure;
 }
 
-void setup() {
-  Serial.begin(9600);
-  init_light();
-  init_barometer();
-}
-
-void loop() {
-  float temperature, pressure, humidity;
-  get_pressure_and_temp(temperature, pressure);
-  humidity = get_humidity();
-
+void print_info(float temperature, float pressure, float humidity, float rain, int light) {
   Serial.print("Temp: ");
   Serial.print(temperature);
   Serial.println(" °C");
-
 
   Serial.printf("Humidite: %4.0f \%% \n", humidity);
 
@@ -111,9 +132,33 @@ void loop() {
   Serial.print(pressure);
   Serial.println(" hPa");
 
-  int light_value = get_light_bool();
   Serial.print("Light: ");
-  Serial.println(light_value);
+  Serial.println(light);
 
-  delay(1000);
+  Serial.print("Pluie (mm): ");
+  Serial.println(rain);
+  
+  Serial.println("\n======================");
+}
+
+void setup() {
+  Serial.begin(9600);
+  init_light();
+  init_barometer();
+}
+
+void loop() {
+  float temperature, pressure, humidity, rain;
+  int light;
+  get_pressure_and_temp(temperature, pressure);
+  get_rain(rain);
+  get_humidity(humidity);
+  get_light_bool(light);
+
+  if(millis() - lastPrint > PrintMs){
+    lastPrint = millis();
+    print_info(temperature, pressure, humidity, rain, light);
+  }
+
+  delay(50);
 }
