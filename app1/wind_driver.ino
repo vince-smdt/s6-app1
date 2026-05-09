@@ -49,7 +49,7 @@ void init_wind_sensor() {
   analogSetAttenuation(ADC_ATTEN);
 }
 
-float get_wind_speed() {
+void get_wind_speed(float& wind_speed) {
   static unsigned long last_us = 0;
   static int last_state = LOW;
   static float speed_kmh = 0.0;
@@ -69,11 +69,11 @@ float get_wind_speed() {
     speed_kmh = 0.0; // after 5 sec without tick, assume 0km/h
   }
 
-  return speed_kmh;
+  wind_speed = speed_kmh;
 }
 
 // Returns wind direction in degrees
-float get_wind_direction() {
+void get_wind_direction(float& wind_dir) {
   int raw = analogRead(WIND_DIR_PIN);
 
   int best_idx = 0;
@@ -82,7 +82,7 @@ float get_wind_direction() {
     int d = abs(raw - wind_dir_table[i].raw);
     if (d < best_delta) { best_delta = d; best_idx = i; }
   }
-  return wind_dir_table[best_idx].dir;
+  wind_dir = wind_dir_table[best_idx].dir;
 }
 
 #endif // WIND_DRIVER_H

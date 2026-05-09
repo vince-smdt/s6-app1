@@ -123,7 +123,7 @@ void get_pressure_and_temp(float& temperature, float& pressure) {
   pressure = pressure_event.pressure;
 }
 
-void print_info(float temperature, float pressure, float humidity, float rain, int light) {
+void print_info(float temperature, float pressure, float humidity, float rain, int light, float wind_dir, float wind_speed) {
   Serial.print("Temp: ");
   Serial.print(temperature);
   Serial.println(" °C");
@@ -139,6 +139,14 @@ void print_info(float temperature, float pressure, float humidity, float rain, i
 
   Serial.print("Pluie (mm): ");
   Serial.println(rain);
+
+  Serial.print("Wind Direction: ");
+  Serial.print(wind_dir);
+  Serial.println(" deg");
+
+  Serial.print("Wind Speed: ");
+  Serial.print(wind_speed);
+  Serial.println(" km/h");
   
   Serial.println("\n======================");
 }
@@ -150,22 +158,19 @@ void setup() {
 }
 
 void loop() {
-  float temperature, pressure, humidity, rain;
+  float temperature, pressure, humidity, rain, wind_dir, wind_speed;
   int light;
   get_pressure_and_temp(temperature, pressure);
   get_rain(rain);
-  get_humidity(humidity);
+  //get_humidity(humidity);
   get_light_bool(light);
+  get_wind_direction(wind_dir);
+  get_wind_speed(wind_speed);
 
   if(millis() - lastPrint > PrintMs){
     lastPrint = millis();
-    print_info(temperature, pressure, humidity, rain, light);
+    print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);
   }
-
-  float wind_dir_deg = get_wind_direction();
-  Serial.print("Wind Direction: ");
-  Serial.print(wind_dir_deg);
-  Serial.println(" deg");
 
   delay(50);
 }
