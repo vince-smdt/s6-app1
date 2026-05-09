@@ -3,6 +3,8 @@
 
 #include "driver/gpio.h"
 
+#include "wind_driver.ino"
+
 #define LIGHT_PIN       GPIO_NUM_34
 #define HUMIDITY_PIN    GPIO_NUM_16
 
@@ -114,6 +116,11 @@ void loop() {
   int light_value = get_light_bool();
   Serial.print("Light: ");
   Serial.println(light_value);
+
+  float wind_dir_deg = get_wind_direction();
+  Serial.print("Wind Direction: ");
+  Serial.print(wind_dir_deg);
+  Serial.println(" deg");
 
   delay(1000);
 }
