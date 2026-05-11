@@ -1,9 +1,18 @@
+#include <Arduino.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 #include <Adafruit_DPS310.h>
 #include <Wire.h>
 
 #include "driver/gpio.h"
 
 #include "wind_driver.ino"
+
+#define SERVICE_UUID           "88d01c2e-cec9-4ae4-9597-515a7fd707de"  // UART service UUID
+#define CHARACTERISTIC_UUID_RX "88d01c2e-cec9-4ae4-9597-515a7fd707de"
+#define CHARACTERISTIC_UUID_TX "88d01c2e-cec9-4ae4-9597-515a7fd707de"
 
 #define HUMIDITY_PIN    GPIO_NUM_16
 #define LIGHT_PIN       GPIO_NUM_34
@@ -18,6 +27,49 @@ uint32_t lastPrint = 0;
 const uint32_t PrintMs = 5000;
 const uint32_t debounceMs = 5;
 Adafruit_DPS310 dps;
+
+BLEServer *pServer = NULL;
+BLECharacteristic *pTxCharacteristic;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+uint8_t txValue = 1;
+
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer *pServer) {
+    deviceConnected = true;
+    Serial.println("Device connected");
+  };
+
+  void onDisconnect(BLEServer *pServer) {
+    deviceConnected = false;
+    Serial.println("Device disconnected");
+  }
+};
+
+void init_BLE() {
+  // Create the BLE Device
+  BLEDevice::init("Weather Service");
+
+  // Create the BLE Server
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  // Create the BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Create a BLE Characteristic
+  pTxCharacteristic = pService->createCharacteristic(CHARACTERISTIC_UUID_TX, BLECharacteristic::PROPERTY_NOTIFY);
+
+  // Descriptor 2902 is not required when using NimBLE as it is automatically added based on the characteristic properties
+  pTxCharacteristic->addDescriptor(new BLE2902());
+
+  // Start the service
+  pService->start();
+
+  // Start advertising
+  pServer->getAdvertising()->start();
+  Serial.println("Waiting a client connection to notify...");
+}
 
 void init_rain() {
   pinMode(RAIN_PIN, INPUT_PULLUP);
@@ -155,6 +207,7 @@ void setup() {
   Serial.begin(9600);
   Serial2.begin(9600, SERIAL_8N1, 15, 14);
 
+  init_BLE();
   init_light();
   init_barometer();
 }
@@ -169,10 +222,26 @@ void loop() {
   get_wind_direction(wind_dir);
   get_wind_speed(wind_speed);
 
-  /*if(millis() - lastPrint > PrintMs){
-    lastPrint = millis();
-    print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);
-  }*/
+  if(millis() - lastPrint > PrintMs){
+    if (deviceConnected) {
+      pTxCharacteristic->setValue(&txValue, 1);
+      pTxCharacteristic->notify();
+    }
+    /*lastPrint = millis();
+    print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);*/
+  }
+  // disconnecting
+  if (!deviceConnected && oldDeviceConnected) {
+    delay(500);                   // give the bluetooth stack the chance to get things ready
+    pServer->startAdvertising();  // restart advertising
+    Serial.println("Started advertising again...");
+    oldDeviceConnected = false;
+  }
+  // connecting
+  if (deviceConnected && !oldDeviceConnected) {
+    // do stuff here on connecting
+    oldDeviceConnected = true;
+  }
 
   String receivedMessage = "";
   while (Serial2.available()) {
