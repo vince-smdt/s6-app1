@@ -23,14 +23,14 @@ bool lastState = HIGH;
 uint32_t lastTipTime = 0;
 uint32_t lastPrint = 0;
 
-const uint32_t PrintMs = 5000;
+const uint32_t PrintMs = 500;
 const uint32_t debounceMs = 5;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-uint8_t txValue = 64; // @
+uint8_t txValue = 64;  // @
 
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) {
@@ -73,7 +73,7 @@ void init_rain() {
   pinMode(RAIN_PIN, INPUT_PULLUP);
 }
 
-void get_rain(float& rain){
+void get_rain(float &rain) {
   bool currentState = digitalRead(RAIN_PIN);
   loops++;
 
@@ -84,9 +84,9 @@ void get_rain(float& rain){
     }
   }
 
-  if(loops == 100){
-    loops     = 0;
-    rainTips  = 0;
+  if (loops == 100) {
+    loops = 0;
+    rainTips = 0;
   }
 
   rain = (rainTips)*0.3;
@@ -118,18 +118,18 @@ void print_info(float temperature, float pressure, float humidity, float rain, f
   Serial2.print("Wind Speed: ");
   Serial2.print(wind_speed);
   Serial2.println(" km/h");
-  
+
   Serial2.println("\n======================");
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // ADCs
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
 
-  Serial2.begin(9600, SERIAL_8N1, 15, 14);
+  Serial2.begin(115200, SERIAL_8N1, 15, 14);
 
   init_BLE();
   init_barometer();
@@ -144,7 +144,7 @@ void loop() {
   get_wind_direction(wind_dir);
   get_wind_speed(wind_speed);
 
-  if(millis() - lastPrint > PrintMs){
+  if (millis() - lastPrint > PrintMs) {
     if (deviceConnected) {
       pTxCharacteristic->setValue(&txValue, 1);
       pTxCharacteristic->notify();
@@ -169,12 +169,12 @@ void loop() {
   String receivedMessage = "";
   while (Serial2.available()) {
     char incomingChar = Serial2.read();  // Read each character from the buffer
-    
+
     if (incomingChar == 'R') {  // Check if the user pressed Enter (new line character)
       // Print the message
       Serial.println("Received request");
       print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);
-      
+
       // Clear the message buffer for the next input
       receivedMessage = "";
     } else {
