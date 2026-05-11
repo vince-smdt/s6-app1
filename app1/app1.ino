@@ -113,28 +113,28 @@ void print_info(float temperature, float pressure, float humidity, float rain, f
   Serial.print(temperature);
   Serial.println(" °C");
 
-  Serial.printf("Humidite: %4.0f \%% \n", humidity);
+  Serial2.printf("Humidite: %4.0f \%% \n", humidity);
 
-  Serial.print("Pressure: ");
-  Serial.print(pressure);
-  Serial.println(" hPa");
+  Serial2.print("Pressure: ");
+  Serial2.print(pressure);
+  Serial2.println(" hPa");
 
   Serial.print("Light: ");
   Serial.print(light);
   Serial.println(" %");
 
-  Serial.print("Pluie (mm): ");
-  Serial.println(rain);
+  Serial2.print("Pluie (mm): ");
+  Serial2.println(rain);
 
-  Serial.print("Wind Direction: ");
-  Serial.print(wind_dir);
-  Serial.println(" deg");
+  Serial2.print("Wind Direction: ");
+  Serial2.print(wind_dir);
+  Serial2.println(" deg");
 
-  Serial.print("Wind Speed: ");
-  Serial.print(wind_speed);
-  Serial.println(" km/h");
+  Serial2.print("Wind Speed: ");
+  Serial2.print(wind_speed);
+  Serial2.println(" km/h");
   
-  Serial.println("\n======================");
+  Serial2.println("\n======================");
 }
 
 void setup() {
@@ -143,6 +143,8 @@ void setup() {
   // ADCs
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
+
+  Serial2.begin(9600, SERIAL_8N1, 15, 14);
 
   init_barometer();
 }
@@ -156,10 +158,26 @@ void loop() {
   get_wind_direction(wind_dir);
   get_wind_speed(wind_speed);
 
-  if(millis() - lastPrint > PrintMs){
+  /*if(millis() - lastPrint > PrintMs){
     lastPrint = millis();
     print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);
-  }
+  }*/
 
+  String receivedMessage = "";
+  while (Serial2.available()) {
+    char incomingChar = Serial2.read();  // Read each character from the buffer
+    
+    if (incomingChar == 'R') {  // Check if the user pressed Enter (new line character)
+      // Print the message
+      Serial.println("Received request");
+      print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);
+      
+      // Clear the message buffer for the next input
+      receivedMessage = "";
+    } else {
+      // Append the character to the message string
+      receivedMessage += incomingChar;
+    }
+  }
   delay(50);
 }
