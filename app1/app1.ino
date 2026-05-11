@@ -3,11 +3,10 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include <Adafruit_DPS310.h>
-#include <Wire.h>
 
 #include "driver/gpio.h"
 
+#include "barometer_driver.ino"
 #include "humidity_driver.ino"
 #include "light_driver.ino"
 #include "wind_driver.ino"
@@ -26,7 +25,6 @@ uint32_t lastPrint = 0;
 
 const uint32_t PrintMs = 5000;
 const uint32_t debounceMs = 5;
-Adafruit_DPS310 dps;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
@@ -95,23 +93,6 @@ void get_rain(float& rain){
   lastState = currentState;
 }
 
-void init_barometer() {
-  Wire.begin(21, 22);
-  if (!dps.begin_I2C()) {
-    Serial.println("DPS310 not found! Barometer will not work.");
-  } else {
-    Serial.println("DPS310 ready! Barometer will work.");
-  }
-}
-
-// Returns temperature in degrees celsius and pressure in hPa.
-void get_pressure_and_temp(float& temperature, float& pressure) {
-  sensors_event_t temp_event, pressure_event;
-  dps.getEvents(&temp_event, &pressure_event);
-  temperature = temp_event.temperature;
-  pressure = pressure_event.pressure;
-}
-
 void print_info(float temperature, float pressure, float humidity, float rain, float light, float wind_dir, float wind_speed) {
   Serial.print("Temp: ");
   Serial.print(temperature);
@@ -167,6 +148,7 @@ void loop() {
     if (deviceConnected) {
       pTxCharacteristic->setValue(&txValue, 1);
       pTxCharacteristic->notify();
+      Serial.println("----- NOTIFY -----");
     }
     /*lastPrint = millis();
     print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);*/
