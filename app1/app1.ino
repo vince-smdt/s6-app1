@@ -30,7 +30,7 @@ BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-uint8_t txValue = 1;
+uint8_t txValue = 64; // @
 
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) {
@@ -94,9 +94,9 @@ void get_rain(float& rain){
 }
 
 void print_info(float temperature, float pressure, float humidity, float rain, float light, float wind_dir, float wind_speed) {
-  Serial.print("Temp: ");
-  Serial.print(temperature);
-  Serial.println(" °C");
+  Serial2.print("Temp: ");
+  Serial2.print(temperature);
+  Serial2.println(" °C");
 
   Serial2.printf("Humidite: %4.0f \%% \n", humidity);
 
@@ -104,9 +104,9 @@ void print_info(float temperature, float pressure, float humidity, float rain, f
   Serial2.print(pressure);
   Serial2.println(" hPa");
 
-  Serial.print("Light: ");
-  Serial.print(light);
-  Serial.println(" %");
+  Serial2.print("Light: ");
+  Serial2.print(light);
+  Serial2.println(" %");
 
   Serial2.print("Pluie (mm): ");
   Serial2.println(rain);
