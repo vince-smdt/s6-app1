@@ -8,6 +8,7 @@
 
 #include "driver/gpio.h"
 
+#include "light_driver.ino"
 #include "wind_driver.ino"
 
 #define SERVICE_UUID           "88d01c2e-cec9-4ae4-9597-515a7fd707de"  // UART service UUID
@@ -15,7 +16,6 @@
 #define CHARACTERISTIC_UUID_TX "88d01c2e-cec9-4ae4-9597-515a7fd707de"
 
 #define HUMIDITY_PIN    GPIO_NUM_16
-#define LIGHT_PIN       GPIO_NUM_34
 #define RAIN_PIN        GPIO_NUM_23
 
 uint32_t rainTips = 0;
@@ -143,21 +143,6 @@ void get_humidity(float& humidity) {
   humidity = data[0] + (data[1] / 256.0);
 }
 
-void init_light() {
-  gpio_config_t io_conf = {};
-  io_conf.intr_type = GPIO_INTR_DISABLE;
-  io_conf.mode = GPIO_MODE_INPUT;
-  io_conf.pin_bit_mask = (1ULL << LIGHT_PIN);
-  io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-  gpio_config(&io_conf);
-}
-
-// Returns 1 if light detected, else 0.
-void get_light_bool(int& light) {
-  light = gpio_get_level(LIGHT_PIN);
-}
-
 void init_barometer() {
   Wire.begin(21, 22);
   if (!dps.begin_I2C()) {
@@ -175,10 +160,10 @@ void get_pressure_and_temp(float& temperature, float& pressure) {
   pressure = pressure_event.pressure;
 }
 
-void print_info(float temperature, float pressure, float humidity, float rain, int light, float wind_dir, float wind_speed) {
-  Serial2.print("Temp: ");
-  Serial2.print(temperature);
-  Serial2.println(" °C");
+void print_info(float temperature, float pressure, float humidity, float rain, float light, float wind_dir, float wind_speed) {
+  Serial.print("Temp: ");
+  Serial.print(temperature);
+  Serial.println(" °C");
 
   Serial2.printf("Humidite: %4.0f \%% \n", humidity);
 
@@ -186,8 +171,9 @@ void print_info(float temperature, float pressure, float humidity, float rain, i
   Serial2.print(pressure);
   Serial2.println(" hPa");
 
-  Serial2.print("Light: ");
-  Serial2.println(light);
+  Serial.print("Light: ");
+  Serial.print(light);
+  Serial.println(" %");
 
   Serial2.print("Pluie (mm): ");
   Serial2.println(rain);
@@ -205,20 +191,23 @@ void print_info(float temperature, float pressure, float humidity, float rain, i
 
 void setup() {
   Serial.begin(9600);
+
+  // ADCs
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+
   Serial2.begin(9600, SERIAL_8N1, 15, 14);
 
   init_BLE();
-  init_light();
   init_barometer();
 }
 
 void loop() {
   float temperature, pressure, humidity, rain, wind_dir, wind_speed;
-  int light;
   get_pressure_and_temp(temperature, pressure);
   get_rain(rain);
   //get_humidity(humidity);
-  get_light_bool(light);
+  float light = get_light_perc();
   get_wind_direction(wind_dir);
   get_wind_speed(wind_speed);
 

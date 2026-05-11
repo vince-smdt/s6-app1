@@ -4,10 +4,6 @@
 #define WIND_SPD_PIN          27
 #define WIND_DIR_PIN          35
 
-#define ADC_RESOLUTION        4095
-#define VOLTAGE_REF           3.3
-#define ADC_ATTEN             ADC_11db
-
 typedef struct {
   uint16_t raw;
   float    dir;
@@ -43,10 +39,6 @@ void init_wind_sensor() {
   io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
   io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
   gpio_config(&io_conf);
-
-  // Wind direction
-  analogReadResolution(12);
-  analogSetAttenuation(ADC_ATTEN);
 }
 
 void get_wind_speed(float& wind_speed) {
