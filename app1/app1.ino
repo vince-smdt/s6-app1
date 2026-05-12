@@ -9,22 +9,16 @@
 #include "barometer_driver.ino"
 #include "humidity_driver.ino"
 #include "light_driver.ino"
+#include "rain_driver.ino"
 #include "wind_driver.ino"
 
 #define SERVICE_UUID           "88d01c2e-cec9-4ae4-9597-515a7fd707de"  // UART service UUID
 #define CHARACTERISTIC_UUID_RX "88d01c2e-cec9-4ae4-9597-515a7fd707de"
 #define CHARACTERISTIC_UUID_TX "88d01c2e-cec9-4ae4-9597-515a7fd707de"
 
-#define RAIN_PIN        GPIO_NUM_23
-
-uint32_t rainTips = 0;
-uint32_t loops = 0;
-bool lastState = HIGH;
-uint32_t lastTipTime = 0;
 uint32_t lastPrint = 0;
 
-const uint32_t PrintMs = 500;
-const uint32_t debounceMs = 5;
+const uint32_t PrintMs = 2000;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
@@ -69,36 +63,12 @@ void init_BLE() {
   Serial.println("Waiting a client connection to notify...");
 }
 
-void init_rain() {
-  pinMode(RAIN_PIN, INPUT_PULLUP);
-}
-
-void get_rain(float &rain) {
-  bool currentState = digitalRead(RAIN_PIN);
-  loops++;
-
-  if (lastState == HIGH && currentState == LOW) {
-    if (millis() - lastTipTime > debounceMs) {
-      rainTips++;
-      lastTipTime = millis();
-    }
-  }
-
-  if (loops == 100) {
-    loops = 0;
-    rainTips = 0;
-  }
-
-  rain = (rainTips)*0.3;
-  lastState = currentState;
-}
-
 void print_info(float temperature, float pressure, float humidity, float rain, float light, float wind_dir, float wind_speed) {
   Serial2.print("Temp: ");
   Serial2.print(temperature);
   Serial2.println(" °C");
 
-  Serial2.printf("Humidite: %4.0f \%% \n", humidity);
+  Serial2.printf("Humidity: %4.0f \%% \n", humidity);
 
   Serial2.print("Pressure: ");
   Serial2.print(pressure);
@@ -136,22 +106,23 @@ void setup() {
 }
 
 void loop() {
-  float temperature, pressure, rain, wind_dir, wind_speed;
+  float temperature, pressure, rain, wind_dir, wind_speed, humidity, light;
   get_pressure_and_temp(temperature, pressure);
   get_rain(rain);
-  float humidity = get_humidity();
-  float light = get_light_perc();
+  light = get_light_perc();
   get_wind_direction(wind_dir);
   get_wind_speed(wind_speed);
 
   if (millis() - lastPrint > PrintMs) {
+    humidity = get_humidity();
+
     if (deviceConnected) {
       pTxCharacteristic->setValue(&txValue, 1);
       pTxCharacteristic->notify();
       Serial.println("----- NOTIFY -----");
     }
-    /*lastPrint = millis();
-    print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);*/
+    lastPrint = millis();
+    /*print_info(temperature, pressure, humidity, rain, light, wind_dir, wind_speed);*/
   }
   // disconnecting
   if (!deviceConnected && oldDeviceConnected) {
