@@ -2,10 +2,11 @@
 #include "BLEDevice.h"
 
 // The remote service we wish to connect to.
-static BLEUUID serviceUUID("488d01c2e-cec9-4ae4-9597-515a7fd707de");
+static BLEUUID serviceUUID("88d01c2e-cec9-4ae4-9597-515a7fd707de");
 // The characteristic of the remote service we are interested in.
 static BLEUUID charUUID("88d01c2e-cec9-4ae4-9597-515a7fd707de");
 
+static boolean wasNotified = false;
 static boolean doConnect = false;
 static boolean connected = false;
 static boolean doScan = false;
@@ -20,6 +21,18 @@ class MyClientCallback : public BLEClientCallbacks {
     Serial.println("onDisconnect");
   }
 };
+
+static void notifyCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
+  Serial.print("Notify callback for characteristic ");
+  Serial.print(pBLERemoteCharacteristic->getUUID().toString().c_str());
+  Serial.print(" of data length ");
+  Serial.println(length);
+  Serial.print("data: ");
+  Serial.write(pData, length);
+  Serial.println();
+
+  wasNotified = 1;
+}
 
 bool connectToServer() {
   Serial.print("Forming a connection to ");
@@ -80,7 +93,7 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     Serial.println(advertisedDevice.toString().c_str());
 
     // We have found a device, let us now see if it contains the service we are looking for.
-    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
+    if (advertisedDevice.haveName() && advertisedDevice.getName() == "Weather Service") {
 
       BLEDevice::getScan()->stop();
       myDevice = new BLEAdvertisedDevice(advertisedDevice);
@@ -91,12 +104,9 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   }  // onResult
 };  // MyAdvertisedDeviceCallbacks
 
-static int last_req_ts_ms = 0;
-static const int REQUEST_DELAY_MS = 5000;
-
 void setup() {
-  Serial.begin(9600);
-  Serial2.begin(9600, SERIAL_8N1, 21, 22);
+  Serial.begin(115200);
+  Serial2.begin(115200, SERIAL_8N1, 21, 22);
   last_req_ts_ms = millis();
 
   BLEDevice::init("");
@@ -118,20 +128,11 @@ void loop() {
     doConnect = false;
   }
 
-  if (connected) {
-    if (pRemoteCharacteristic->canRead()) {
-      String value = pRemoteCharacteristic->readValue();
-      Serial.print("The characteristic value was: ");
-      Serial.println(value.c_str());
-    }
-  }
-
-  int now = millis();
-  if ((now - last_req_ts_ms) > REQUEST_DELAY_MS) {
+  if(wasNotified){
     Serial2.write('R');
-    last_req_ts_ms = now;
+    wasNotified = 0;
   }
 
   while (Serial2.available()) Serial.write(Serial2.read());
-  delay(1000);
+  delay(50);
 }
