@@ -1,3 +1,9 @@
+/*
+* Auteurs:
+*  Vincent Simard-Schmidt (simv2104)
+*  Maxime Aubin (aubm1811)
+*/
+
 #ifndef WIND_DRIVER_H
 #define WIND_DRIVER_H
 
@@ -9,6 +15,7 @@ typedef struct {
   float    dir;
 } WindDirection;
 
+// Table associant valeur ADC a angle en degree
 static const WindDirection wind_dir_table[] = {
   {  264, 112.5 },
   {  335,  67.5 },
@@ -31,7 +38,7 @@ static const WindDirection wind_dir_table[] = {
 static const int TABLE_SIZE = sizeof(wind_dir_table) / sizeof(wind_dir_table[0]);
 
 void init_wind_sensor() {
-  // Wind speed
+  // Initialisation pin digital (switch)
   gpio_config_t io_conf = {};
   io_conf.intr_type = GPIO_INTR_DISABLE;
   io_conf.mode = GPIO_MODE_INPUT;
@@ -46,6 +53,7 @@ void get_wind_speed(float& wind_speed) {
   static int last_state = LOW;
   static float speed_kmh = 0.0;
 
+  // Conversion valeur ADC a vitesse vent
   int state = digitalRead(WIND_SPD_PIN);
   if (state == HIGH && last_state == LOW) {
     unsigned long now = micros();
@@ -58,16 +66,16 @@ void get_wind_speed(float& wind_speed) {
   last_state = state;
 
   if (last_us != 0 && micros() - last_us > 5000000) {
-    speed_kmh = 0.0; // after 5 sec without tick, assume 0km/h
+    speed_kmh = 0.0; // apres 5 secondes sans tick, assume 0km/h
   }
 
   wind_speed = speed_kmh;
 }
 
-// Returns wind direction in degrees
 void get_wind_direction(float& wind_dir) {
   int raw = analogRead(WIND_DIR_PIN);
 
+  // Approximation angle (determiner on est le plus proche de quel angle en fonction de la valeur adc brutte)
   int best_idx = 0;
   int best_delta = abs(raw - wind_dir_table[0].raw);
   for (int i = 1; i < TABLE_SIZE; i++) {

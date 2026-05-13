@@ -1,3 +1,9 @@
+/*
+* Auteurs:
+*  Vincent Simard-Schmidt (simv2104)
+*  Maxime Aubin (aubm1811)
+*/
+
 #include "driver/gpio.h"
 #include "BLEDevice.h"
 
