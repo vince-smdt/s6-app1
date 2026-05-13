@@ -1,9 +1,18 @@
+/*
+* Auteurs:
+*  Vincent Simard-Schmidt (simv2104)
+*  Maxime Aubin (aubm1811)
+*/
+
 #ifndef HUMIDITY_DRIVER_H
 #define HUMIDITY_DRIVER_H
 
 #include "driver/gpio.h"
 
 float get_humidity() {
+  // Code fourni sur Moodle
+
+
   int i, j;
   int duree[42];
   unsigned long pulse;

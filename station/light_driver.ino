@@ -1,3 +1,9 @@
+/*
+* Auteurs:
+*  Vincent Simard-Schmidt (simv2104)
+*  Maxime Aubin (aubm1811)
+*/
+
 #ifndef LIGHT_DRIVER_H
 #define LIGHT_DRIVER_H
 
@@ -10,6 +16,7 @@
 
 // Returns brightness level as percentage (0-100)
 float get_light_perc() {
+  // Conversion voltage a pourcentage eclairage (diviseur de tension)
   int raw = analogRead(LIGHT_PIN);
   float voltage = LIGHT_VOLTAGE_REF * (raw / LIGHT_ADC_RESOLUTION);
   return 100.0 * (voltage / LIGHT_MAX_VOLTAGE);

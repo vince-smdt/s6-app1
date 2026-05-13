@@ -1,3 +1,10 @@
+/*
+* Auteurs:
+*  Vincent Simard-Schmidt (simv2104)
+*  Maxime Aubin (aubm1811)
+*/
+
+
 #include <Arduino.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -63,6 +70,7 @@ void init_BLE() {
   Serial.println("Waiting a client connection to notify...");
 }
 
+// Envoie de toutes les donnees via UART d'un ESP32 a l'autre
 void print_info(float temperature, float pressure, float humidity, float rain, float light, float wind_dir, float wind_speed) {
   Serial2.print("Temp: ");
   Serial2.print(temperature);
@@ -113,6 +121,7 @@ void loop() {
   get_wind_direction(wind_dir);
   get_wind_speed(wind_speed);
 
+  // Apres un certain delai, station notifie client que de nouvelles mesures sont disponibles
   if (millis() - lastPrint > PrintMs) {
     humidity = get_humidity();
 
