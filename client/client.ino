@@ -5,11 +5,15 @@
 static BLEUUID serviceUUID("88d01c2e-cec9-4ae4-9597-515a7fd707de");
 // The characteristic of the remote service we are interested in.
 static BLEUUID charUUID("88d01c2e-cec9-4ae4-9597-515a7fd707de");
-
+//Flag de notification
 static boolean wasNotified = false;
+//Flag pour chercher une connection
 static boolean doConnect = false;
+//Flag pour ne pas ce reconnecter une fois connecter
 static boolean connected = false;
+//Flag pour commencer le scan
 static boolean doScan = false;
+
 static BLERemoteCharacteristic *pRemoteCharacteristic;
 static BLEAdvertisedDevice *myDevice;
 
@@ -23,6 +27,7 @@ class MyClientCallback : public BLEClientCallbacks {
 };
 
 static void notifyCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
+  //Impression de la notification reçu
   Serial.print("Notify callback for characteristic ");
   Serial.print(pBLERemoteCharacteristic->getUUID().toString().c_str());
   Serial.print(" of data length ");
@@ -31,6 +36,7 @@ static void notifyCallback(BLERemoteCharacteristic *pBLERemoteCharacteristic, ui
   Serial.write(pData, length);
   Serial.println();
 
+  //Flag de notification
   wasNotified = 1;
 }
 
@@ -106,9 +112,10 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
 void setup() {
   Serial.begin(115200);
+  //Setup lien UART
   Serial2.begin(115200, SERIAL_8N1, 21, 22);
-  last_req_ts_ms = millis();
 
+  //Début du scan pour connection BLE UART
   BLEDevice::init("");
   BLEScan *pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
@@ -119,6 +126,7 @@ void setup() {
 }
 
 void loop() {
+  //Connection à la station de capteur
   if (doConnect == true) {
     if (connectToServer()) {
       Serial.println("We are now connected to the BLE Server.");
@@ -128,11 +136,13 @@ void loop() {
     doConnect = false;
   }
 
+  //Requete des données sur le lien UART
   if(wasNotified){
     Serial2.write('R');
     wasNotified = 0;
   }
 
+  //Print des données qui viennent du lien UART
   while (Serial2.available()) Serial.write(Serial2.read());
   delay(50);
 }
